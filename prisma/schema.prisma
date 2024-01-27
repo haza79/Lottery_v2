@@ -1,0 +1,165 @@
+generator client {
+  provider        = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model roles {
+  id         String       @id(map: "roles_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  role       String       @unique(map: "roles_un") @db.VarChar
+  createdate DateTime     @default(now()) @db.Timestamp(6)
+  user_roles user_roles[]
+}
+
+model user_roles {
+  id         String   @id(map: "user_roles_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id    String   @db.Uuid
+  role_id    String   @db.Uuid
+  createdate DateTime @default(now()) @db.Timestamp(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_roles_fk")
+  roles      roles    @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_roles_fk_1")
+}
+
+model users {
+  id               String            @id(map: "users_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username         String            @unique(map: "users_un") @db.VarChar
+  password         String            @db.VarChar
+  salt             String            @db.VarChar
+  createdate       DateTime          @default(now()) @db.Timestamp(6)
+  bank_accounts    bank_accounts[]
+  customer_details customer_details?
+  lotterys         lotterys[]
+  user_roles       user_roles[]
+}
+
+model banks {
+  id            String          @id(map: "banks_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code          String          @db.VarChar
+  name          String          @db.VarChar
+  createdate    DateTime        @default(now()) @db.Timestamp(6)
+  updatedate    DateTime        @default(now()) @db.Timestamp(6)
+  bank_accounts bank_accounts[]
+}
+
+model customer_details {
+  id                     String        @id(map: "customer_details_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                   String        @db.VarChar
+  phone                  String        @db.VarChar
+  date_of_birth          DateTime      @db.Date
+  bank_account_id        String        @db.Uuid
+  code                   String?       @db.VarChar
+  createdate             DateTime      @default(now()) @db.Timestamp(6)
+  updatedate             DateTime      @default(now()) @db.Timestamp(6)
+  user_id                String        @unique(map: "customer_details_un") @db.Uuid
+  customer_bank_accounts bank_accounts @relation(fields: [bank_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "bank")
+  users                  users         @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user")
+}
+
+model bank_accounts {
+  id               String             @id(map: "customer_bank_accounts_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  bank_id          String             @db.Uuid
+  user_id          String             @db.Uuid
+  user_bank_name   String             @db.VarChar
+  bank_number      String             @db.VarChar
+  createdate       DateTime           @default(now()) @db.Timestamp(6)
+  updatedate       DateTime           @default(now()) @db.Timestamp(6)
+  banks            banks              @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "bank")
+  users            users              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user")
+  customer_details customer_details[]
+  seller_details   seller_details?
+}
+
+model lottery_pack_details {
+  id              String        @id(map: "lottery_pack_details_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lottery_pack_id String        @db.Uuid
+  lottery_id      String        @db.Uuid
+  createdate      DateTime      @default(now()) @db.Timestamp(6)
+  updatedate      DateTime      @default(now()) @db.Timestamp(6)
+  lotterys        lotterys      @relation(fields: [lottery_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "lottery")
+  lottery_packs   lottery_packs @relation(fields: [lottery_pack_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "lottery pack")
+}
+
+model lottery_pack_stocks {
+  id              String        @id(map: "lottery_pack_stocks_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lottery_pack_id String        @unique(map: "lottery_pack_stocks_un") @db.Uuid
+  sold            Boolean       @default(false)
+  createdate      DateTime      @default(now()) @db.Timestamp(6)
+  updatedate      DateTime      @default(now()) @db.Timestamp(6)
+  lottery_packs   lottery_packs @relation(fields: [lottery_pack_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "pack")
+}
+
+model lottery_packs {
+  id                   String                 @id(map: "lottery_packs_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  packname_id          String                 @db.Uuid
+  lottery_quantity     Decimal                @default(0) @db.Decimal
+  price                Decimal                @db.Decimal
+  createdate           DateTime               @default(now()) @db.Timestamp(6)
+  updatedate           DateTime               @default(now()) @db.Timestamp(6)
+  lottery_pack_details lottery_pack_details[]
+  lottery_pack_stocks  lottery_pack_stocks?
+  packnames            packnames              @relation(fields: [packname_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "lottery_packs_fk")
+}
+
+model lotterys {
+  id                   String                 @id(map: "lotterys_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  period_id            String                 @db.Uuid
+  number               String                 @db.VarChar
+  set                  Decimal                @db.Decimal
+  qrcode               String?                @db.VarChar
+  barcode              String?                @db.VarChar
+  seller_id            String                 @db.Uuid
+  createdate           DateTime               @default(now()) @db.Timestamp(6)
+  updatedate           DateTime               @default(now()) @db.Timestamp(6)
+  ispack               Boolean                @default(false)
+  price                Decimal                @db.Decimal
+  lottery_pack_details lottery_pack_details[]
+  periods              periods                @relation(fields: [period_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "period")
+  users                users                  @relation(fields: [seller_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "seller")
+  stocks               stocks?
+}
+
+model packnames {
+  id            String          @id(map: "lottery_pack_name_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  pack_quantity Decimal         @db.Decimal
+  packname      String          @db.VarChar
+  createdate    DateTime        @default(now()) @db.Timestamp(6)
+  updatedate    DateTime        @default(now()) @db.Timestamp(6)
+  lottery_packs lottery_packs[]
+}
+
+model periods {
+  id            String     @id(map: "periods_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  period        Decimal    @db.Decimal
+  date          DateTime   @db.Date
+  orange_number String     @db.VarChar
+  use           Boolean    @default(false)
+  createdate    DateTime   @default(now()) @db.Timestamp(6)
+  updatedate    DateTime   @default(now()) @db.Timestamp(6)
+  lotterys      lotterys[]
+}
+
+model seller_details {
+  id                    String        @id(map: "id") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id               String        @unique(map: "user id") @db.Uuid
+  identification_number String        @db.VarChar
+  name                  String        @db.VarChar
+  date_of_birth         DateTime      @db.Date
+  address               String        @db.VarChar
+  shopname              String        @db.VarChar
+  user_bank_id          String        @unique(map: "user bank id") @db.Uuid
+  createdate            DateTime      @default(now()) @db.Timestamp(6)
+  updatedate            DateTime      @default(now()) @db.Timestamp(6)
+  bank_accounts         bank_accounts @relation(fields: [user_bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user bank")
+}
+
+model stocks {
+  id         String   @id(map: "stocks_pk") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lottery_id String   @unique(map: "stocks_un") @db.Uuid
+  sold       Boolean  @default(false)
+  createdate DateTime @default(now()) @db.Timestamp(6)
+  updatedate DateTime @default(now()) @db.Timestamp(6)
+  lotterys   lotterys @relation(fields: [lottery_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "stocks_fk")
+}
